@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>115年藥品相似清單 | 藥劑科表單快捷工作台</title>
+<style>
+  :root{
+    --primary:#1a365d;
+    --secondary:#2b6cb0;
+    --accent:#319795;
+    --tallman:#c05621;      /* 大小寫警示字母 */
+    --tallman-bg:#fff2e6;
+    --dose-fg:#ffffff;
+    --dose-bg:#2c7a7b;      /* 劑量標示 */
+    --brand-fg:#a0aec0;     /* 廠牌／商品名 */
+    --bg:#f7fafc;
+    --card-bg:#ffffff;
+    --text:#2d3748;
+    --border:#e2e8f0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:"Helvetica Neue",Arial,"Noto Sans TC","Microsoft JhengHei",sans-serif;}
+  body{background:var(--bg);color:var(--text);line-height:1.6;padding:20px;}
+  .container{max-width:1080px;margin:0 auto;}
+
+  header{text-align:center;padding:34px 20px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,.1);}
+  header h1{font-size:1.8rem;margin-bottom:8px;letter-spacing:1px;}
+  header p{opacity:.9;font-size:.95rem;}
+  .back-link{display:inline-block;margin-bottom:16px;color:var(--secondary);text-decoration:none;font-weight:600;}
+  .back-link:hover{text-decoration:underline;}
+
+  .legend{background:#ebf8fa;border-left:5px solid var(--accent);border-radius:0 10px 10px 0;padding:16px 20px;margin-bottom:8px;font-size:.88rem;color:#4a5568;display:flex;flex-wrap:wrap;gap:18px;align-items:center;}
+  .legend-item{display:flex;align-items:center;gap:8px;}
+  .legend-sample{font-weight:700;}
+  .legend .tallman{background:var(--tallman-bg);color:var(--tallman);padding:1px 6px;border-radius:4px;}
+  .legend .dose{background:var(--dose-bg);color:var(--dose-fg);padding:1px 7px;border-radius:4px;font-weight:600;}
+  .legend .brand{color:var(--brand-fg);font-style:italic;}
+
+  nav.toc{display:flex;flex-wrap:wrap;gap:10px;margin:28px 0 8px;}
+  nav.toc a{background:var(--card-bg);border:1px solid var(--border);color:var(--primary);text-decoration:none;padding:8px 16px;border-radius:20px;font-size:.85rem;font-weight:600;transition:.2s;}
+  nav.toc a:hover{background:var(--secondary);color:#fff;border-color:var(--secondary);}
+
+  section.category{margin:44px 0 30px;scroll-margin-top:16px;}
+  .cat-head{display:flex;align-items:baseline;gap:10px;border-bottom:3px solid var(--accent);padding-bottom:10px;margin-bottom:18px;}
+  .cat-head h2{font-size:1.3rem;color:var(--primary);font-weight:700;}
+  .cat-head .count{color:#a0aec0;font-size:.85rem;font-weight:600;}
+
+  .group{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:14px;box-shadow:0 2px 4px rgba(0,0,0,.04);}
+  .group-idx{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:var(--secondary);color:#fff;font-size:.72rem;font-weight:700;border-radius:50%;margin-right:10px;flex-shrink:0;}
+  .drug-row{display:flex;align-items:flex-start;gap:10px;padding:7px 0;}
+  .drug-row + .drug-row{border-top:1px dashed var(--border);}
+  .letter{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;font-size:.68rem;font-weight:700;color:#fff;flex-shrink:0;margin-top:2px;}
+  .drug-text{font-size:.96rem;flex:1;}
+  .drug-text .tallman{background:var(--tallman-bg);color:var(--tallman);font-weight:700;padding:0 2px;border-radius:3px;}
+  .drug-text .dose{background:var(--dose-bg);color:var(--dose-fg);font-weight:600;padding:1px 6px;border-radius:5px;font-size:.86rem;white-space:nowrap;}
+  .drug-text .form{color:var(--secondary);font-weight:600;font-size:.85rem;}
+  .drug-text .brand{color:var(--brand-fg);font-style:italic;}
+  .flag{display:inline-block;font-size:.75rem;color:#c53030;margin-right:2px;}
+
+  /* 外觀相似 */
+  .shape-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;}
+  .shape-card{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:0 2px 4px rgba(0,0,0,.04);}
+  .shape-card-head{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+  .shape-card-head .cat-num{font-size:.7rem;color:#a0aec0;font-weight:700;}
+  .shape-card-head .cat-label{font-size:.85rem;font-weight:700;color:var(--primary);}
+  .pill-icon{flex-shrink:0;box-shadow:0 1px 2px rgba(0,0,0,.25);}
+  .shape-card .drug-text{font-size:.86rem;}
+  .shape-card .drug-row{padding:4px 0;}
+
+  footer{text-align:center;margin-top:50px;padding:20px;color:#718096;font-size:.85rem;border-top:1px solid var(--border);}
+
+  /* 相似對照表（含實際照片） */
+  .subhead{font-size:1rem;color:var(--secondary);font-weight:700;margin:22px 0 14px;padding-left:10px;border-left:4px solid var(--secondary);}
+  .compare-card{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px 18px;margin-bottom:14px;box-shadow:0 2px 4px rgba(0,0,0,.04);}
+  .compare-items{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;}
+  .compare-item{flex:1 1 150px;max-width:190px;background:#fbfcfd;border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;}
+  .compare-item img{width:100%;aspect-ratio:1/1;object-fit:contain;border-radius:8px;background:#fff;border:1px solid var(--border);margin-bottom:8px;}
+  .compare-item .ph-name{font-size:.82rem;font-weight:700;color:var(--primary);line-height:1.35;word-break:break-word;}
+  .compare-item .ph-common{font-size:.78rem;color:var(--secondary);margin-top:2px;}
+  .compare-item .ph-chinese{font-size:.78rem;color:#4a5568;margin-top:2px;}
+  .compare-item .ph-mark{font-size:.72rem;color:#a0aec0;margin-top:4px;}
+  .compare-item .letter{margin-bottom:6px;}
+
+  @media (max-width:600px){
+    .legend{flex-direction:column;align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <a href="./藥劑科表單快捷工作台.html" class="back-link">← 返回藥劑科表單快捷工作台</a>
+  <header>
+    <h1>💊 115年藥品相似清單</h1>
+    <p>院內名稱相似、外觀相似及同成份藥品彙整，調劑核對時請落實三讀五對</p>
+  </header>
+
+  <div class="legend">
+    <div class="legend-item"><span class="legend-sample tallman">大寫字母</span><span>＝原始清單刻意大小寫混排（Tall Man Lettering），標出最容易搞混的部分</span></div>
+    <div class="legend-item"><span class="legend-sample dose">5mg</span><span>＝劑量</span></div>
+    <div class="legend-item"><span class="legend-sample brand">(商品名)</span><span>＝廠牌／商品名</span></div>
+    <div class="legend-item"><span class="flag">!*◇§☆○</span><span>沿用原清單標記符號</span></div>
+  </div>
+
+  <nav class="toc" id="toc"></nav>
+
+  <div id="listRoot"></div>
+</div>
+
+<footer>
+  <p>© 2026 藥劑科 工作台 ｜ 原始資料來源：115年藥品相似清單.doc</p>
+</footer>
+
+<script>
+const rowColors = ["#2b6cb0","#c05621","#319795","#805ad5","#d53f8c","#38a169"];
+
+const nameGroups = [
+{ cat:"藥品名稱相似", groups:[
+  "!* EPHEDRINE Inj. 40mg/ml 1ml/Amp & !*Epinephrine(Adrenalin)Inj. 1mg/1ml/Amp",
+  "Aceclofenac(Ascofen) 100mg/Tab & Acetaminophen(Acetal) 500mg/Tab & ACETAZOLAMIDE(Acetazolamax) 250mg/Tab & Acetylcysteine(ACC) 600mg/Effervescent Tab",
+  "*Amikacin(Aminfec) Inj. 250mg/2ml/Amp & *Aminophylline Inj. 250mg/10ml/Amp & *Amiparen Inj. 10% 400ml/BT",
+  "Amlodipine(Norvasc) 5mg/Tab & AMiodarone(Adarone) 200mg/Tab & AMLODIPINE(Amlobin) 5mg/Tab生達 & Amitriptyline(Trynol) 25mg/Tab",
+  "Benzonatate(Zcough) 100mg/Soft Cap & BENZBROMARONE(Euricon) 50mg/Tab",
+  "Dapagliflozin(Forxiga) 10mg/Tab & DAPAGLIFLOZIN(Forxiga) 5mg/Tab",
+  "◇Oxybuprocaine(Lacrimin) Eye Drops 5ml/BT ＆ ◇Omidenepag(Eybelis) Oph Soln 2.5ml/BT",
+  "*Ceftazidime(Sintum) Inj. 2gm/Vial & *CEFTRIAXONE(Sintrix) Inj. 1g/Vial & *Cefuroxime(Furoxime) Inj. 1.5g/Vial",
+  "EMPagliflozin(Jardiance) 25mg/Tab & Esomeprazole(Esocomfort) 40mg/Tab",
+  "*Metoclopramide(Promeran) Inj. 10mg/2ml/Amp & *METRONIDAZOLE(Sabs) Inj. 100ml/BT",
+  "Exforge HCT 5/160/12.5mg/Tab & EXFORGE 5/80mg/Tab",
+  "Rifampin(Rifampicin) 150mg/Cap & Rifater 120/80/250/Tab",
+  "EMPagliflozin(Jardiance) 25mg/Tab & EMPAGLIFLOZIN(Jardiance) 10mg/Tab",
+  "DIPhenhydramine(Benamine) 50mg/Cap & Diphenidol(Dinidol) 25mg/Tab & Dipyridamole 25mg/Tab",
+  "*Atracurium(Tracrium) Inj. 25mg/2.5ml/Amp & *Atropine Inj. 1mg/1ml/Amp",
+  "Biotase(Dialicon[Lipase…]) Tab & Biovita Tab",
+  "*Diphenhydramine Inj. 30mg/1ml/Amp & *Dipyridamole(Posintin) Inj. 10mg/2ml/Amp",
+  "Clarinase(Minlife-P) 5/120mg/Tab & Clarithromycin(Clarthrocin) 500mg/Tab",
+  "DIHYDROergotamine(Lesiton) 5mg/Cap & Dihydroergotoxine(Elistin) 1.5mg/Tab",
+  "Glibenclamide(Gliben) 5mg/Tab & GLIMET(Glimepiride&Metformin) 2/500mg/Tab & Glimepiride(Grumed) 2mg/Tab",
+  "Levetiracetam(Letampin) 500mg/Tab & Levofloxacin(Leflodal) 500mg/Tab",
+  "Metoclopramide(Promeran) 3.84mg/Tab & Metronidazole(Flagyl) 250mg/Tab",
+  "Nicametate(Sanyl) 50mg/Tab & NICORADIL(Silvinol) 5mg/Tab",
+  "Pravafen(Pravastatin&Fenogal) 40/160mg/Cap & Pravastatin(Pratin) 40mg/Tab",
+  "§Gentamycin Cream 15g/Tube & ◇Gentamicin Oph Oint 5g/Tube",
+  "Trajenta Duo 2.5/850mg/Tab & Jardiance Duo 12.5/850mg/Tab",
+  "Aceclofenac(Ascofen) 100mg/Tab & Acetylcysteine(ACC) 600mg/Effervescent Tab",
+  "Pentoxifylline(Trenfylline) 400mg/Tab & Theophylline(Theophy) 200mg/Tab"
+]},
+{ cat:"同成份同劑型", groups:[
+  "Fosamax Plus 70/5600iu/Tab & ALENDRONATE 70mg/Tab",
+  "Amlodipine(Norvasc) 5mg/Tab & AMLODIPINE(Amlobin) 5mg/Tab生達"
+]},
+{ cat:"同成份同劑型不同劑量", groups:[
+  "Atorvastatin(Atorin) 10mg/Tab & ATORVASTATIN(Atorva) 20mg/Tab",
+  "BISOPROLOL(Bisol) 1.25mg/Tab & Bisoprolol(Betacor) 5mg/Tab",
+  "CARVEDILOL 25mg/Tab & Carvedilol(Udilol) 6.25mg/Tab",
+  "Cephradine(Lisacef) 500mg/Cap & CEPHRADINE(Cekodin) 250mg/Cap",
+  "DAPAGLIFLOZIN(Forxiga) 5mg/Tab & Dapagliflozin(Forxiga) 10mg/Tab",
+  "Donepezil(Epalon) 10mg/Tab & DONEPEZIL(Aricept) 5mg/Tab",
+  "Hyzaar 50/12.5mg/Tab & Hyzaar 100/12.5mg/Tab",
+  "Nifedipine(Adalat) OROS 30mg/Tab & NIFEDIPINE(Atanaal) 5mg/Soft Cap",
+  "Pioglitazone(Piotas) 15mg/Tab & PIOGLITAZONE(Pioglit) 30mg/Tab",
+  "Fenofibrate(Fendown) 160mg/Tab & Fenofibrate(Fenogal) 200mg/Cap",
+  "◇FLUorometholone(Foxone) 0.02% 10ml/BT & ◇Fluorometholon(Flucason) 0.02% 5ml/BT",
+  "☆Clonazepam(Clonopam) 0.5mg/Tab & ☆CLONAZEPAM(Clonopam) 2mg/Tab",
+  "Topiramate(Toramate) 100mg/Tab & TOPIRAMATE(TOPINMATE) 25mg/Tab",
+  "METformin(Glubin) 500mg/Tab & Metformin(Eutomin) 850mg/Tab",
+  "!*MOUnjaro Injection 10mg/0.6mL/P & !*Mounjaro Injection 5mg/0.6mL/P",
+  "◇TIMOLOL Oph Soln 25mg/5ml/BT & ◇Timolol(Timoptol-XE) 0.5% Oph Soln 2.5ml/BT",
+  "Entresto(Sacubitril&Valsartan) 100mg/Tab & ENTRESTO(Sacubitril&Valsartan) 200mg/Tab",
+  "Olmesartan(Olmesardin) 20mg/Tab & OLMESARTAN(Olmesardin) 40mg/Tab",
+  "RIVaroxaban(Xarelto) 10mg/Tab & Rivaroxaban(Xarelto) 15mg/Tab",
+  "AUGMENTIN(Curam) 1000mg/Tab & Augmentin(Soonmelt) 375mg/Tab"
+]},
+{ cat:"同成份不同劑型", groups:[
+  "Acyclovir(Deherp) 400mg/Tab & §Acyclovir(Aclovir) Cream 50mg/g 5g/Tube & ◇ACYCLOVIR(Devirus) Oph Oint 4.5g/Tube",
+  "!*Amiodarone(Cordarone) Inj. 150mg/3ml/Amp & AMIodarone(Adarone) 200mg/Tab",
+  "Ascorbic Acid 200mg/Tab & Ascorbic Acid Inj. 500mg/2ml/Amp",
+  "Bisacodyl 5mg/Tab & §BISACODYL Supp 10mg/Tab",
+  "Butylscopolamine(Buscopan) 10mg/Tab & *Butylscopolamine(Fucon) Inj. 20mg/1ml/Amp",
+  "Levofloxacin(Leflodal) 500mg/Tab & *Levofloxacin(Bacflocin) Inj. 500mg/100ml/BT",
+  "Clindamycin(Lindacin) 150mg/Cap & *Clindamycin Inj. 300mg/2ml/Amp",
+  "Cyproheptadine(Pilian) 4mg/Tab & CYPROHETADINE(Cypromin) Syr. 120ml/BT",
+  "Cataflam(Diclofenac Pot.) 25mg/Tab & Diclofenac(Voren) Inj. 75mg/3ml/Amp",
+  "§Voren-G(Diclofenac) Gel 40g/Tube & §VOREN(Diclofenac) Supp 12.5mg/Tab",
+  "§Chyndacin Gel 10mg/6g/Tube & Clindamycin(Lindacin) 150mg/Cap",
+  "Furosemide(Furide) 40mg/Tab & *Furosemide(Rasitol) Inj. 20mg/2ml/Amp",
+  "*Gentamycin(V-Genta) Inj. 80mg/2ml/Vial & ◇Gentamicin(Gendermin) Oph Oint 5g/Tube",
+  "Gliclazide(Gluzide) 80mg/Tab & GLICLAZIDE(Diamin) MR 30mg/Tab",
+  "*Lidocaine 2% Inj. 20ml/Vial & §Lidocaine(Xylocaine) Spray 10% 80g/BT & !*Xylocaine 2% for Intravenous Inj. 5ml/Amp",
+  "Metronidazole(Flagyl) 250mg/Tab & *Metronidazole(Sabs) Inj. 100ml/BT",
+  "☆Midazolam(Dormicum) 7.5mg/Tab & ☆*Midazolam(Midazo) Inj. 15mg/3ml/Amp",
+  "§Extracomb(Mycomb) Cream 20g/Tube & ◇Mycomb Otic Drop 5ml/BT",
+  "*Neostigmine(Vagostigmine) Inj. 0.5mg/1ml/Amp & ◇Neostigmine(Sitromin) Oph Soln 10ml/BT",
+  "Pantoprazole(Pantyl) 40mg/Tab & *Pantoprazole(Panole) Inj. 40mg/Vial",
+  "Phenytoin(Dilantin) 100mg/Cap & *Phenytoin(Aleviatin) Inj. 250mg/5ml/Amp",
+  "Piracetam(Syntam) Granules 2400mg/Pkg & Piracetam Oral Soln 200mg/ml 200ml/BT & *Piracetam(Noopol) Inj. 1gm/5ml/Amp",
+  "Potassium Gluconate(Const-K) 750mg/Tab & !*Pot.Chloride(KCL) Inj. 15% 40meq/20ml/Amp",
+  "Prochlorperazine 8mg/Tab & *Prochlorperazine(Novamin) Inj. 5mg/ml/Amp",
+  "Augmentin(Soonmelt) 375mg/Tab & *Augmentin(Soonmelt) Inj. 1/0.2g/Vial",
+  "Tranexamic Acid(Trand) 250mg/Cap & *Tranexamic Acid(Tren) Inj. 500mg/5ml/Amp",
+  "Valproate(Depakine) 200mg/Tab & Valproate(Hecalis) Oral",
+  "Biovita(Ucoda-H) Tab & *Vit. B Complex Inj. 10ml/Vial",
+  "*Cimetidine(Cimetin) Inj. 100mg/ml 2ml/Amp & Cimetidine(Tamedin) 200mg/Tab",
+  "*Diphenhydramine Inj. 30mg/1ml/Amp & Diphenhydramine(Benamine) 50mg/Cap",
+  "*Dipyridamole(Posintin) Inj. 10mg/2ml/Amp & Dipyridamole 25mg/Tab",
+  "*Metoclopramide(Promeran) Inj. 10mg/2ml/Amp & Metoclopramide(Promeran) 3.84mg/Tab",
+  "○SYMbicort Rapihaler 120Doses/BT & ○Symbicort Turbuhaler 120Doses/BT"
+]}
+];
+
+const shapeCategories = [
+  { title:"圓扁形白色錠劑（小顆）", shape:"round", flat:true, size:"sm", colors:["#ffffff"], drugs:"Cilostazol(Loata) 50mg/Tab & Dicyclomine(Swityl) 10mg/Tab & Isoniazid 100mg/Tab & Lorazepam(Anxiedin) 1mg/Tab & Nitroglycerin(Nitrostat/NTG) 0.6mg/Tab & Pioglitazone(Piotas) 15mg/Tab & PIOGLITAZONE(Politone) 30mg/Tab & Procaterol(Meptin) 25ug/Tab & Pyridoxine(Vit.B6) 50mg/Tab & Tolterodine(Terodine) 2mg/Tab" },
+  { title:"圓凸形白色錠劑（小顆）", shape:"round", flat:false, size:"sm", colors:["#ffffff"], drugs:"Acarbose(Carlipin) 50mg/Tab & Butylscopolamine(Buscopan) 10mg/Tab & DONEPEZIL(Nomi-Nox) 5mg/Tab & ☆Fludiazepam(Era) 0.25mg/Tab & Metoclopramide(Promeran) 3.84mg/Tab & Prochlorperazine 8mg/Tab & Sennoside(Sennapur) 12.5mg/Tab" },
+  { title:"圓形白色錠劑（小顆）", shape:"round", flat:null, size:"sm", colors:["#ffffff"], drugs:"Baclofen(Bafen) 5mg/Tab & Thyroxine(Eltroxin) 0.05mg/Tab & Topiramate(Topinmate) 25mg/Tab" },
+  { title:"圓扁形白色錠劑（中顆）", shape:"round", flat:true, size:"md", colors:["#ffffff"], drugs:"Amantadine(Enzil) 100mg/Tab & Ambroxol(Musco) 30mg/Tab & Benzbromarone(Euricon) 50mg/Tab & Dihydroergotoxine(Elistin) 1.5mg/Tab & Domperidone(Emetrol) 10mg/Tab & Furosemide(Furide) 40mg/Tab & Gliclazide(Gluzide) 80mg/Tab & Midodrine(Midorine) 2.5mg/Tab & NICORADIL(Silvinol) 5mg/Tab & Pramipexole(Mirapex) 1mg/Tab & Trihexyphenidyl(Switane) 2mg/Tab & Vildagliptin(Galvus) 50mg/Tab" },
+  { title:"圓凸形白色錠劑（中顆）", shape:"round", flat:false, size:"md", colors:["#ffffff"], drugs:"Aceclofenac(Ascofen) 100mg/Tab & ALENDRONATE 70mg/Tab & Diltiazem(Cartil) 60mg/Tab & Dimethicone(Kascoal) 40mg/Tab & Doxazosin(Xadosin) SR 4mg/Tab & Magnesium Oxide 250mg/Tab & Pitavastatin(Zulitor) 4mg/Tab & Valproate(Depakine) 200mg/Tab" },
+  { title:"圓形白色錠劑（中顆）", shape:"round", flat:null, size:"md", colors:["#ffffff"], drugs:"CARVEDILOL 25mg/Tab & Metronidazole(Flagyl) 250mg/Tab & Olmesartan(Olmesardin) 20mg/Tab" },
+  { title:"圓扁形白色錠劑（大顆）", shape:"round", flat:true, size:"lg", colors:["#ffffff"], drugs:"ACETAZOLAMIDE(Acetazolamax) 250mg/Tab & Amiodarone(Adarone) 200mg/Tab & Bacide(Baktar) 80/400mg/Tab & Carbamazepine(Carpine) 200mg/Tab & Strocain 5mg/Tab" },
+  { title:"圓凸形白色錠劑（大顆）", shape:"round", flat:false, size:"lg", colors:["#ffffff"], drugs:"Calcium Lactate 500mg/Tab & Ciprofloxacin(Suxen) 250mg/F.C.Tab & Clarinase(Minlife-P) 5/60mg/Tab & Metformin(Betaform) 850mg/Tab" },
+  { title:"長圓柱形白色錠劑（小顆）", shape:"capsule", flat:null, size:"sm", colors:["#ffffff"], drugs:"Bambuterol(Lungtec) 10mg/Tab & Glibenclamide(Gliben) 5mg/Tab & GLICLAZIDE(Diamin) MR 30mg/Tab & Mosapride(Mosapin) 5mg/Tab & Zolpidem(Semi-Nax) 10mg/Tab" },
+  { title:"長圓柱形白色錠劑（大顆）", shape:"capsule", flat:null, size:"lg", colors:["#ffffff"], drugs:"Exforge HCT 5/160/12.5mg/Tab & Fosamax Plus 70mg/5600IU/Tab" },
+  { title:"橢圓形白色錠劑（小顆）", shape:"oval", flat:null, size:"sm", colors:["#ffffff"], drugs:"Atorvastatin(Atorin) 10mg/Tab & Caduet 5/10mg/Tab & Desmopressin(Minirin) 0.1mg/Tab & Losartan(Losacar) 50mg/Tab & Midazolam(Dormicum) 7.5mg/Tab" },
+  { title:"橢圓形白色錠劑（大顆）", shape:"oval", flat:null, size:"lg", colors:["#ffffff"], drugs:"Actosmet 15/850mg/Tab & Atorvastatin(Atorva) 20mg/Tab & Augmentin(Soonmelt) 375mg/Tab & Azithromycin(Zithromax) 250mg/Tab & Glimet 2/500mg/Tab & Hyzaar 100/12.5mg/Tab & Fenofibrate(Lifenoz-U) 160mg/Tab & Theophylline(Telin) 200mg/Tab" },
+  { title:"圓扁形藍色錠劑", shape:"round", flat:true, size:"md", colors:["#4299e1"], drugs:"Oxybutynin(Oxyban) 5mg/Tab & Trospium(Uracare) 10mg/Tab" },
+  { title:"圓凸形黃色錠劑", shape:"round", flat:false, size:"md", colors:["#f6e05e"], drugs:"Alinamine-F(Aelocon) 50/5mg/Tab & Allopurinol 100mg/Tab & Biotase(Dialicon[Lipase…]) Tab & Bisacodyl 5mg/Tab & Cafergot(Ergoton) 1/100mg/Tab & Carvedilol(Cardiol) 6.25mg/Tab & Donepezil(Epalon) 10mg/Tab & Famotidine(Fadin) 20mg/Tab & Glycopyrrolate(Glycopyrodyn) 1mg/Tab & Lontec(Cabidrin) 2.5/60mg/Tab & Pentoxifylline(Throne) 400mg/Tab & Repaglinide 1mg/Tab & Rosuvastatin(Crestor) 5mg/Tab & Bethanechol(Mesacol) 25mg/Tab" },
+  { title:"圓凸形淡橘錠劑", shape:"round", flat:false, size:"md", colors:["#fbb072"], drugs:"Cataflam(Diclofenac Pot.) 25mg/Tab & Imipramine(Fronil) 25mg/Tab & Nifedipine(Adalat) OROS 30mg/Tab & Pinaverium(Spastec) 50mg/Tab & Rifater 120/80/250/Tab & Saxagliptin(Onglyza) 5mg/Tab & Spironolactone(Aldactin) 25mg/Tab & Terazosin(Teradrin) 2mg/Tab & Trazodone(Torlex) 50mg/Tab & Rivaroxaban(Xarelto) 15mg/Tab" },
+  { title:"圓扁形黃色錠劑", shape:"round", flat:true, size:"md", colors:["#f6e05e"], drugs:"Chlorzoxazone(Solacon) 200mg/Tab & Clonazepam(Clonopam) 0.5mg/Tab & EXFORGE 5/80mg/Tab & Folic Acid 5mg/Tab & Meloxicam(Melicam) 15mg/Tab" },
+  { title:"圓凸形紅色錠劑（小顆）", shape:"round", flat:false, size:"sm", colors:["#fc8181"], drugs:"Dipyridamole 25mg/Tab & Esidri(Relazide) 0.1/10/10mg/Tab & Estrogen Conjugate(Estromon) 0.625mg/Tab & Nicametate(Sanyl) 50mg/Tab" },
+  { title:"橢圓形黃土色錠劑", shape:"oval", flat:null, size:"lg", colors:["#c19a6b"], drugs:"Acetaminophen(Depyretin) 500mg/Tab & Febuxostat(Febuton) 80mg/Tab & Galvus Met(Vildagliptin&Metformin) 50/850mg/Tab & Glucovance 2.5/500mg/Tab & Janumet 50/850mg/Tab & Levetiracetam(Letampin) 500mg/Tab & Levofloxacin(Leflodal) 500mg/Tab" },
+  { title:"八邊形白色錠劑", shape:"octagon", flat:null, size:"md", colors:["#ffffff"], drugs:"Amlodipine(Norvasc) 5mg/Tab & AMLODIPINE(Amlobin) 5mg/Tab生達" },
+  { title:"上蓋紅色／下蓋白色膠囊", shape:"capsule", flat:null, size:"md", colors:["#fc8181","#ffffff"], drugs:"DIPhenhydramine(Benamine) 50mg/Cap & Pregabalin(Lyrica) 75mg/Cap" }
+];
+
+const compareGroups = [{"table": 0, "entries": [{"name": "EPHEDRINE Inj. 40mg/ml 1ml/Amp", "common": "Ephedrine", "chinese": "鹽酸麻黃素注射劑", "marking": "", "img": "g000_01.jpg"}, {"name": "Epinephrine(Adrenalin) Inj. 1mg/1ml/Amp", "common": "Bosmin", "chinese": "安得理那寧注射液", "marking": "", "img": "g000_02.jpg"}]}, {"table": 1, "entries": [{"name": "Aceclofenac(Ascofen) 100mg/Tab", "common": "Tonec", "chinese": "炎立消膜衣錠", "marking": "印字:STD∕777", "img": "g001_01.jpg"}, {"name": "Acetaminophen(Acetal) 500mg/Tab", "common": "Panadol", "chinese": "愛舒疼錠", "marking": "印字:07︱07∕PURZER", "img": "g001_02.jpg"}, {"name": "ACETAZOLAMIDE(Acetazolamax) 250mg/Tab", "common": "Diamox", "chinese": "安賜他明錠", "marking": "印字:P.S.∕一字刻痕", "img": "g001_03.jpg"}, {"name": "Acetylcysteine (ACC) 600mg/Effervescent Tab", "common": "Flumucil", "chinese": "袪痰寧發泡錠", "marking": "", "img": "g001_04.jpg"}]}, {"table": 2, "entries": [{"name": "Amikacin(Aminfec) Inj. 250mg/2ml/Amp", "common": "Amikin", "chinese": "安炎注射液", "marking": "", "img": "g002_01.jpg"}, {"name": "Aminophylline Inj. 250mg/10ml/Amp", "common": "Phyllocontin", "chinese": "心安寧注射液", "marking": "", "img": "g002_02.jpg"}, {"name": "Amiparen Inj. 400ml/BT", "common": "Amiparen", "chinese": "安命保寧注射液", "marking": "", "img": "g002_03.jpg"}]}, {"table": 3, "entries": [{"name": "Amlodipine(Norvasc) 5mg/Tab", "common": "Norvasc", "chinese": "脈優錠", "marking": "印字:Pfizer∕NVC 5", "img": "g003_01.jpg"}, {"name": "AMiodarone(Adarone) 200mg/Tab", "common": "Cordarone", "chinese": "艾達絡錠", "marking": "印字:ADARONE SY 200", "img": "g003_02.jpg"}, {"name": "AMLODIPINE(Amlobin) 5mg/Tab生達", "common": "Norvasc", "chinese": "鎮脈錠", "marking": "印字:STD∕TA 21", "img": "g003_03.jpg"}, {"name": "Amitriptyline(Trynol) 25mg/Tab", "common": "Tripyline", "chinese": "德利能糖衣錠", "marking": "", "img": "g003_04.jpg"}]}, {"table": 4, "entries": [{"name": "Benzonatate(Zcough) 100mg/Soft Cap", "common": "Bensau", "chinese": "剎咳得軟膠囊", "marking": "", "img": "g004_01.jpg"}, {"name": "Benzbromarone(Euricon) 50mg/Tab", "common": "Urinorm", "chinese": "優力康錠", "marking": "印字: SY 50∕一字刻痕", "img": "g004_02.jpg"}]}, {"table": 5, "entries": [{"name": "*Ceftazidime(Sintum) Inj. 2g/Vial", "common": "Fortum", "chinese": "信騰注射劑", "marking": "", "img": "g005_01.jpg"}, {"name": "CEFTRIAXONE (Sintrix) Inj. 1g/Vial", "common": "Rocephin", "chinese": "信得瑞注射劑", "marking": "", "img": "g005_02.jpg"}, {"name": "*Cefuroxime(Furoxime) Inj. 1.5g/Vial", "common": "Zinacef", "chinese": "福樂欣注射劑", "marking": "", "img": "g005_03.jpg"}]}, {"table": 6, "entries": [{"name": "EMPagliflozin(Jardiance) 25mg/Tab", "common": "Jardiance", "chinese": "恩排糖膜衣錠", "marking": "印字：S 25", "img": "g006_01.jpg"}, {"name": "Esomeprazole(Esocomfort) 40mg/Tab", "common": "Nexium", "chinese": "易舒康活腸膜衣錠", "marking": "印字：無", "img": "g006_02.jpg"}]}, {"table": 7, "entries": [{"name": "Metoclopramide(Promeran) Inj. 10mg/2ml/Amp", "common": "Primperan", "chinese": "普克胃注射液", "marking": "", "img": "g007_01.jpg"}, {"name": "METRONIDAZOLE(Sabs) Inj. 100ml/BT", "common": "Flagyl", "chinese": "沙普注射液", "marking": "", "img": "g007_02.jpg"}]}, {"table": 8, "entries": [{"name": "Exforge HCT 5/160/12.5mg/Tab", "common": "Exforge HCT", "chinese": "力安穩膜衣錠", "marking": "印字：NVR∕VCL", "img": "g008_01.jpg"}, {"name": "EXFORGE 5/80mg/Tab", "common": "Exforge", "chinese": "易安穩膜衣錠", "marking": "印字：NVR∕NV", "img": "g008_02.jpg"}]}, {"table": 9, "entries": [{"name": "Rifampin(Rifampicin) 150mg/Cap", "common": "Rifadin", "chinese": "立汎黴素膠囊", "marking": "", "img": "g009_01.jpg"}, {"name": "Rifater 120/80/250/Tab", "common": "Rifater", "chinese": "衛肺特糖衣錠", "marking": "", "img": "g009_02.jpg"}]}, {"table": 10, "entries": [{"name": "Diphenhydramine(Benamine) 50mg/Cap", "common": "Vena", "chinese": "去敏膠囊", "marking": "印字：327", "img": "g010_01.jpg"}, {"name": "Diphenidol(Dinidol) 25mg/Tab", "common": "Cephadol", "chinese": "制暈效糖衣錠", "marking": "印字：STD 158", "img": "g010_02.jpg"}, {"name": "Dipyridamole 25mg/Tab", "common": "Persantin", "chinese": "待匹力達糖衣錠", "marking": "印字：YSP 183", "img": "g010_03.jpg"}]}, {"table": 11, "entries": [{"name": "Atracurium(Tracrium) Inj. 25mg/2.5ml/A", "common": "Tracrium", "chinese": "妥開利注射劑", "marking": "", "img": "g011_01.jpg"}, {"name": "Atropine Inj. 1mg/1ml/Amp", "common": "Atropine", "chinese": "硫酸阿托品注射液", "marking": "", "img": "g011_02.jpg"}]}, {"table": 12, "entries": [{"name": "Biotase(Dialicon[Lipase ]) Tab", "common": "Biotase", "chinese": "加利康錠", "marking": "印字:SHOU CHAN∕一字刻痕", "img": "g012_01.jpg"}, {"name": "Biovita(Ucoda-H) Tab", "common": "Biovita", "chinese": "優可達膜衣錠", "marking": "", "img": "g012_02.jpg"}]}, {"table": 13, "entries": [{"name": "LoraPseudo 5/120mg/Tab", "common": "Clarinase", "chinese": "莫鼻卡持續性藥效錠", "marking": "印字：YSP 68", "img": "g013_01.jpg"}, {"name": "Clarithromycin(Clarthrocin) 500mg/Tab", "common": "Klaricid", "chinese": "可速欣膜衣錠", "marking": "印字：S", "img": "g013_02.jpg"}]}, {"table": 14, "entries": [{"name": "Dihydroergotamine(Lesiton) 5mg/Cap", "common": "Seglor", "chinese": "樂息痛膠囊", "marking": "印字：KEC", "img": "g014_01.jpg"}, {"name": "Dihydroergotoxine(Elistin) 1.5mg/Tab", "common": "Elistin", "chinese": "益利循錠", "marking": "", "img": "g014_02.jpg"}]}, {"table": 15, "entries": [{"name": "Glibenclamide(Gliben) 5mg/Tab", "common": "Euglucon", "chinese": "固利康錠", "marking": "印字：STD∣140", "img": "g015_01.jpg"}, {"name": "Glimepiride(Grumed) 2mg/Tab", "common": "Amryl", "chinese": "達醣定錠", "marking": "印字：S D∕8 6", "img": "g015_02.jpg"}, {"name": "Glimet 2/500mg/Tab", "common": "Amaryl M", "chinese": "利控糖膜衣錠", "marking": "印字：ST 502∕一字刻痕", "img": "g015_03.jpg"}]}, {"table": 16, "entries": [{"name": "Levetiracetam(Letampin) 500mg/Tab", "common": "Keppra", "chinese": "力癲平膜衣錠", "marking": "印字：SW 500", "img": "g016_01.jpg"}, {"name": "Levofloxacin(Leflodal) 500mg/Tab", "common": "Cravit", "chinese": "佐淨菌膜衣錠", "marking": "印字：AX  067∕雙面一字刻痕", "img": "g016_02.jpg"}]}, {"table": 17, "entries": [{"name": "Metoclopramide(Promeran) 3.84mg/Tab", "common": "Primperan", "chinese": "胃明朗糖衣錠", "marking": "印字：S", "img": "g017_01.jpg"}, {"name": "Metronidazole(Flagyl) 250mg/Tab", "common": "Flagyl", "chinese": "服立治兒錠", "marking": "", "img": "g017_02.jpg"}]}, {"table": 18, "entries": [{"name": "Nicametate(Sanyl) 50mg/Tab", "common": "Euclidan", "chinese": "暢力糖衣錠", "marking": "印字：Sanyl", "img": "g018_01.jpg"}, {"name": "Nicoradil(Silvinol) 5mg/Tab", "common": "Sigmart", "chinese": "喜必諾錠", "marking": "印字：NS /298", "img": "g018_02.jpg"}]}, {"table": 19, "entries": [{"name": "Pravafen 40/160mg/Cap", "common": "Pravafen", "chinese": "普脂芬膠囊", "marking": "", "img": "g019_01.jpg"}, {"name": "Pravastatin(Pratin) 40mg/Tab", "common": "Mevalotin", "chinese": "脂樂潔錠", "marking": "印字：ST 098∕雙面一字刻痕", "img": "g019_02.jpg"}]}, {"table": 20, "entries": [{"name": "Fosamax Plus 70/70mg/Tab", "common": "Fosamax", "chinese": "福善美保骨錠", "marking": "", "img": "g020_01.jpg"}, {"name": "ALENDRONATE 70mg/Tab", "common": "Fosamax", "chinese": "善骨實膜衣錠", "marking": "", "img": "g020_02.jpg"}]}, {"table": 21, "entries": [{"name": "Amlodipine(Norvasc) 5mg/Tab", "common": "Norvasc", "chinese": "脈優錠", "marking": "印字:Pfizer∕NVC 5", "img": "g021_01.jpg"}, {"name": "AMLODIPINE(Amlobin) 5mg/Tab生達", "common": "Norvasc", "chinese": "鎮脈錠", "marking": "印字:STD∕TA 21", "img": "g021_02.jpg"}]}, {"table": 22, "entries": [{"name": "Atorvastatin(Atorin) 10mg/Tab", "common": "Lipitor", "chinese": "降脂妥膜衣錠", "marking": "印字: GBL∕086", "img": "g022_01.jpg"}, {"name": "Atorvastatin(ATORVA) 20mg/Tab", "common": "Lipitor", "chinese": "立舒脂膜衣錠", "marking": "印字:S∣ D∕771", "img": "g022_02.jpg"}]}, {"table": 23, "entries": [{"name": "BISOPROLOL(Bisol) 1.25mg/Tab", "common": "Concor", "chinese": "匹梭膜衣錠", "marking": "圓形", "img": "g023_01.jpg"}, {"name": "Bisoprolol(Betacor) 5mg/Tab", "common": "Concor", "chinese": "壓控樂膜衣錠", "marking": "一字刻痕", "img": "g023_02.jpg"}]}, {"table": 24, "entries": [{"name": "CARVEDILOL 25mg/Tab", "common": "Dilatrend", "chinese": "壓落保錠", "marking": "印字:CCP C69∕雙面一字刻痕", "img": "g024_01.jpg"}, {"name": "Carvedilol(Udilol) 6.25mg/Tab", "common": "Dilatrend", "chinese": "優迪絡錠", "marking": "印字: UL∕一字刻痕", "img": "g024_02.jpg"}]}, {"table": 25, "entries": [{"name": "Cephradine(Lisacef) 500mg/Cap", "common": "Velosef", "chinese": "利速復膠囊", "marking": "印字:ST 014", "img": "g025_01.jpg"}, {"name": "Cephradine(Unifradine) 250mg/Cap", "common": "Velosef", "chinese": "優凡定膠囊", "marking": "印字:CKN 250", "img": "g025_02.jpg"}]}, {"table": 26, "entries": [{"name": "Dapagliflozin(Forxiga) 5mg/Tab", "common": "Forxiga", "chinese": "福適佳膜衣錠", "marking": "印字：5 /1427", "img": "g026_01.jpg"}, {"name": "Dapagliflozin(Forxiga) 10mg/Tab", "common": "Forxiga", "chinese": "福適佳膜衣錠", "marking": "印字：10 /1428", "img": "g026_02.jpg"}]}, {"table": 27, "entries": [{"name": "Donepezil(Epalon) 10mg/Tab", "common": "Aricept", "chinese": "憶可朗膜衣錠", "marking": "印字：NK∕482", "img": "g027_01.jpg"}, {"name": "DONEPEZIL(Nomi-Nox) 5mg/Tab", "common": "Aricept", "chinese": "腦密腦舒膜衣錠", "marking": "印字：NOMINOX∕5", "img": "g027_02.jpg"}]}, {"table": 28, "entries": [{"name": "Hyzaar 50/12.5mg/Tab", "common": "Hyzaar", "chinese": "好悅您膜衣錠", "marking": "印字：717", "img": "g028_01.jpg"}, {"name": "Hyzaar 100/12.5mg/Tab", "common": "Hyzaar", "chinese": "好悅您膜衣錠", "marking": "印字：745", "img": "g028_02.jpg"}]}, {"table": 29, "entries": [{"name": "Nifedipine S.R. 30mg/Tab", "common": "Adalat", "chinese": "恆脈循持續性膜衣錠", "marking": "", "img": "g029_01.jpg"}, {"name": "NIFEDIPINE(Atanaal) 5mg/Soft Cap", "common": "Adalat", "chinese": "壓達能軟膠囊", "marking": "", "img": "g029_02.jpg"}]}, {"table": 30, "entries": [{"name": "Pioglitazone(Piotas) 15mg/Tab", "common": "Actos", "chinese": "安醣錠", "marking": "印字：PL ∕T41", "img": "g030_01.jpg"}, {"name": "PIOGLITAZONE(Pioglit) 30mg/Tab", "common": "Actos", "chinese": "順醣錠", "marking": "印字：STD ∕237∕一字刻痕", "img": "g030_02.jpg"}]}, {"table": 31, "entries": [{"name": "Fenofibrate(Fendown) 160mg/Tab", "common": "Lipanthyl", "chinese": "悅脂益膜衣錠", "marking": "印字: AX079  160", "img": "g031_01.jpg"}, {"name": "FENOFIBRATE(Fenogal) 200mg/Cap", "common": "Fenogal", "chinese": "芬諾克膠囊", "marking": "", "img": "g031_02.jpg"}]}, {"table": 32, "entries": [{"name": "Fluorometholon(Flucason) 0.02% 5ml/BT", "common": "Flucon", "chinese": "復爾朗點眼懸液", "marking": "", "img": "g032_01.jpg"}, {"name": "FLUorometholon(Foxone) Oph Susp 10ml/BT", "common": "Flucon", "chinese": "好視多眼用懸浮液", "marking": "", "img": "g032_02.jpg"}]}, {"table": 33, "entries": [{"name": "Clonazepam(Clonopam) 2mg/Tab", "common": "Rivotril", "chinese": "克癇平錠", "marking": "印字:SK 2 / 十字刻痕", "img": "g033_01.jpg"}, {"name": "Clonazepam(Clonopam) 0.5mg/Tab", "common": "Rivotril", "chinese": "克癇平錠", "marking": "印字:SK 0.5 / 十字刻痕", "img": "g033_02.jpg"}]}, {"table": 34, "entries": [{"name": "TOPIRAMATE(TOPINMATE) 25mg/Tab", "common": "Topamax", "chinese": "妥品美錠", "marking": "印字：LO∕26", "img": "g034_01.jpg"}, {"name": "Topiramate(Toramate) 100mg/Tab", "common": "Topamax", "chinese": "適癲痛膜衣錠", "marking": "印字：YSP∕128", "img": "g034_02.jpg"}]}, {"table": 35, "entries": [{"name": "METformin(Glubin) 500mg/Tab", "common": "Glucophage", "chinese": "利糖平膜衣錠", "marking": "長圓柱形/白色/錠劑(印字：PURZER∣061∕一字刻痕)", "img": "g035_01.jpg"}, {"name": "Metformin(Eutomin) 850mg/Tab", "common": "Glucophage", "chinese": "優糖平錠", "marking": "圓凸形/白色/錠劑(印字：UL∣129∕一字刻痕)", "img": "g035_02.jpg"}]}, {"table": 36, "entries": [{"name": "EMPagliflozin(Jardiance) 25mg/Tab", "common": "Jardiance", "chinese": "恩排糖膜衣錠", "marking": "印字：S 25", "img": "g036_01.jpg"}, {"name": "EMPagliflozin(Jardiance) 10mg/Tab", "common": "Jardiance", "chinese": "恩排糖膜衣錠", "marking": "印字：S 10", "img": "g036_02.jpg"}]}, {"table": 37, "entries": [{"name": "Timolol(Timoptol-XE) 0.5% Oph Slon 2.5ml/BT", "common": "Timoptol-XE", "chinese": "青眼露長效型點眼液劑", "marking": "", "img": "g037_01.jpg"}, {"name": "TIMOLOL(Delolol) Oph Slon 25mg/5ml/BT", "common": "Timoptol", "chinese": "克壓眼藥水", "marking": "", "img": "g037_02.jpg"}]}, {"table": 38, "entries": [{"name": "Entresto(Sacubitril&Valsartan) 100mg/Tab", "common": "Entresto", "chinese": "健安心膜衣錠", "marking": "印字：NVR / L1", "img": "g038_01.jpg"}, {"name": "Entresto(Sacubitril&Valsartan) 200mg/Tab", "common": "Entresto", "chinese": "健安心膜衣錠", "marking": "印字：NVR / L11", "img": "g038_02.jpg"}]}, {"table": 39, "entries": [{"name": "Olmesartan(Olmesardin) 20mg/Tab", "common": "Ometec", "chinese": "妥得降膜衣錠", "marking": "印字：YSP 245", "img": "g039_01.jpg"}, {"name": "OLMEsardin(Olmesardin) 40mg/Tab", "common": "Olmetec", "chinese": "妥得降膜衣錠", "marking": "印字：YSP 246", "img": "g039_02.jpg"}]}, {"table": 40, "entries": [{"name": "Rivaroxaban(Xarelto) 15mg/Tab", "common": "Xarelto", "chinese": "拜瑞妥膜衣錠", "marking": "印字：BAYER∕15 ▽", "img": "g040_01.jpg"}, {"name": "RIVAROXABAN(Xarelto) 10mg/Tab", "common": "Xarelto", "chinese": "拜瑞妥膜衣錠", "marking": "印字：BAYER∕10 ▽", "img": "g040_02.jpg"}]}, {"table": 41, "entries": [{"name": "Acyclovir(Deherp) 200mg/Tab", "common": "Zovirax", "chinese": "庖寧錠", "marking": "印字: TD15", "img": "g041_01.jpg"}, {"name": "§Acyclovir(Aclovir) Cream 50mg/g 5g/Tube", "common": "Zovirax", "chinese": "艾剋樂芙乳膏", "marking": "", "img": "g041_02.jpg"}, {"name": "◇ACYCLOVIR(Devirus) Oph. Oint. 4.5g/Tub", "common": "Zovirax", "chinese": "力克眼用軟膏", "marking": "", "img": "g041_03.jpg"}]}, {"table": 42, "entries": [{"name": "!*Amiodarone(Cordarone)Inj. 150mg/3ml/Amp", "common": "Cordarone", "chinese": "臟得樂注射液", "marking": "", "img": "g042_01.jpg"}, {"name": "AMIODARONE(Adarone) 200mg/Tab", "common": "Cordarone", "chinese": "艾達絡錠", "marking": "印字:ADARONE SY 200", "img": "g042_02.jpg"}]}, {"table": 43, "entries": [{"name": "Ascorbic Acid\n200mg/Tab", "common": "Vitamin C", "chinese": "西西美錠", "marking": "", "img": "g043_01.jpg"}, {"name": "*Ascorbic Acid Inj. 500mg/2ml/A", "common": "Vitamin C", "chinese": "維他命C注射液", "marking": "", "img": "g043_02.jpg"}]}, {"table": 44, "entries": [{"name": "Bisacodyl\n 5mg/Tab", "common": "Dulcolax", "chinese": "秘克的腸溶糖衣錠", "marking": "", "img": "g044_01.jpg"}, {"name": "§BISACODYL Supp 10mg/Tab", "common": "Dulcolax", "chinese": "無祕栓劑", "marking": "", "img": "g044_02.jpg"}]}, {"table": 45, "entries": [{"name": "Butylscopolamine(Buscopan) 10mg/Tab", "common": "Buscopan", "chinese": "補斯可胖糖衣錠", "marking": "", "img": "g045_01.jpg"}, {"name": "*Butylscopolamine(Buston) Inj.20mg/1ml/Amp", "common": "Buscopan", "chinese": "勿賜痛注射液", "marking": "", "img": "g045_02.jpg"}]}, {"table": 46, "entries": [{"name": "Levofloxacin(Leflodal) 500mg/Tab", "common": "Cravit", "chinese": "佐淨菌膜衣錠", "marking": "印字：AX  067∕雙面一字刻痕", "img": "g046_01.jpg"}, {"name": "*Levofloxacin(Bacfloci)Inj.500mg/100ml/BT", "common": "Cravit", "chinese": "倍樂欣靜脈輸液", "marking": "", "img": "g046_02.jpg"}]}, {"table": 47, "entries": [{"name": "Clindamycin(Lindacin) 150mg/Cap", "common": "Cleocin", "chinese": "利達信黴素膠囊", "marking": "印字：puizen 16", "img": "g047_01.jpg"}, {"name": "*Clindamycin Inj. 300mg/2ml/Amp", "common": "Cleocin", "chinese": "克林達黴素注射液", "marking": "", "img": "g047_02.jpg"}]}, {"table": 48, "entries": [{"name": "Cyproheptadine(Pilian) 4mg/Tab", "common": "Periactin", "chinese": "佩你安錠", "marking": "印字：Y∕一字刻痕", "img": "g048_01.jpg"}, {"name": "CYPROHETADINE(Cypromin) Syr. 120ml/BT", "common": "Periactin", "chinese": "希普利敏液", "marking": "", "img": "g048_02.jpg"}]}, {"table": 49, "entries": [{"name": "Cataflam(Diclofenac Pot.) 25mg/Tab", "common": "Cataflam", "chinese": "克他服寧糖衣錠", "marking": "", "img": "g049_01.jpg"}, {"name": "*Diclofenac(Voren) Inj. 75mg/3ml/Amp", "common": "Voren", "chinese": "迪可露芬娜克注射液", "marking": "", "img": "g049_02.jpg"}]}, {"table": 50, "entries": [{"name": "Digoxin(Lanoxin) 0.25mg/Tab", "common": "Lanoxin", "chinese": "隆我心錠", "marking": "印字:WELLCONE X3A∕一字刻痕", "img": "g050_01.jpg"}, {"name": "*Digoxin(Lanoxin) Inj. 0.25mg/1ml/Amp", "common": "Digoxin", "chinese": "隆我心注射劑", "marking": "", "img": "g050_02.jpg"}]}, {"table": 51, "entries": [{"name": "Furosemide(Furide) 40mg/Tab", "common": "Lasix", "chinese": "舒利諾錠", "marking": "印字：STD 282∕一字刻痕", "img": "g051_01.jpg"}, {"name": "*Furosemide(Rasitol) Inj. 20mg/2ml/Amp", "common": "Lasix", "chinese": "來喜妥注射液", "marking": "", "img": "g051_02.jpg"}]}, {"table": 52, "entries": [{"name": "*Gentamycin(V-Genta) Inj. 80mg/2ml/Vial", "common": "Garamycin", "chinese": "維建注射液", "marking": "", "img": "g052_01.jpg"}, {"name": "◇Gentamicin(Gendermin) Oph Oint 5g/Tube", "common": "Gentamicin", "chinese": "漸得明眼藥膏", "marking": "", "img": "g052_02.jpg"}]}, {"table": 53, "entries": [{"name": "Gliclazide(Gluzide) 80mg/Tab", "common": "Diamicron", "chinese": "格汝唐錠", "marking": "印字：STD G05∕一字刻痕", "img": "g053_01.jpg"}, {"name": "GLICLAZIDE(Diamin) MR 30mg/Tab", "common": "Diamicron", "chinese": "印字：ST∕427", "marking": "代蜜持續性藥效錠", "img": "g053_02.jpg"}]}, {"table": 54, "entries": [{"name": "*Lidocaine 2% Inj. 20ml/Vial", "common": "Xylocaine", "chinese": "利都卡音注射液", "marking": "", "img": "g054_01.jpg"}, {"name": "§Lidocaine(Xylocaine) Spray 10% 80g/BT", "common": "Xylocaine", "chinese": "苦息樂卡因唧筒式噴霧劑", "marking": "", "img": "g054_02.jpg"}, {"name": "*Xylocaine2% for Intravenous Inj. 5ml/Amp", "common": "Xylocaine", "chinese": "靜注用苦息樂卡因2﹪注射液", "marking": "", "img": "g054_03.jpg"}]}, {"table": 55, "entries": [{"name": "Metronidazole(Flagyl) 250mg/Tab", "common": "Flagyl", "chinese": "服立治兒錠", "marking": "", "img": "g055_01.jpg"}, {"name": "*Metronidazole(Sabs) Inj. 100ml/BT", "common": "Flagyl", "chinese": "沙普注射液", "marking": "", "img": "g055_02.jpg"}]}, {"table": 56, "entries": [{"name": "☆Midazolam(Dormicum) 7.5mg/Tab", "common": "Dormicum", "chinese": "導眠靜膜衣錠", "marking": "印字:ROCHE 7.5∕一字刻痕", "img": "g056_01.jpg"}, {"name": "☆*Midazolam(Midazo) Inj. 15mg/3ml/Amp", "common": "Dormicum", "chinese": "米達諾注射劑", "marking": "", "img": "g056_02.jpg"}]}, {"table": 57, "entries": [{"name": "§Extracomb(Mycomb) Cream 15g/Tube", "common": "Mycomb", "chinese": "美康乳膏", "marking": "", "img": "g057_01.jpg"}, {"name": "○Mycomb Otic Drop 5ml/BT", "common": "Mycomb", "chinese": "美康耳用滴劑", "marking": "", "img": "g057_02.jpg"}]}, {"table": 58, "entries": [{"name": "*Neostigmine(Vagostigmine) Inj. 0.5mg/1ml/Amp", "common": "Prostigmin", "chinese": "安可健針", "marking": "", "img": "g058_01.jpg"}, {"name": "◇Neostigmine(Sitromin) Oph Soln 10ml/BT", "common": "Eyesmin", "chinese": "寧舒通點眼液", "marking": "", "img": "g058_02.jpg"}]}, {"table": 59, "entries": [{"name": "Pantoprazole(Pantyl) 40mg/Tab", "common": "Pantoloc", "chinese": "速潰樂腸溶膜衣錠", "marking": "", "img": "g059_01.jpg"}, {"name": "*Pantoprazole(Panole) Inj. 40mg/Vail", "common": "Pantoloc", "chinese": "衛潰凍晶注射劑", "marking": "", "img": "g059_02.jpg"}]}, {"table": 60, "entries": [{"name": "Phenytoin(Dilantin) 100mg/Cap", "common": "Dilantin", "chinese": "癲能停膠囊", "marking": "印字：PARKE DAVIS  P–D 100", "img": "g060_01.jpg"}, {"name": "*Phenytoin(Aleviatin) Inj. 250mg/5ml/Amp", "common": "Dilantin", "chinese": "阿雷彼阿慶注射液", "marking": "", "img": "g060_02.jpg"}]}, {"table": 61, "entries": [{"name": "Piracetam(Syntam) Granules 2400mg/Pkg", "common": "Nootropil", "chinese": "郝智內服溶液用顆粒劑", "marking": "", "img": "g061_01.jpg"}, {"name": "Piracetam  Oral Soln 200mg/ml 200ml/BT", "common": "Nootropil", "chinese": "派卡登內服液劑", "marking": "", "img": "g061_02.jpg"}, {"name": "*Piracetam(Noopol) Inj.  1gm/5ml/Amp", "common": "Nootropil", "chinese": "腦寶靜脈輸注液", "marking": "", "img": "g061_03.jpg"}]}, {"table": 62, "entries": [{"name": "Potassium Gluconate(Const-K) 750mg/Tab", "common": "Slow K", "chinese": "康是鉀持續性藥效錠", "marking": "", "img": "g062_01.jpg"}, {"name": "*Potassium Chloride Inj. 15% 20meq/Amp", "common": "KCL", "chinese": "氯化鉀注射液15％", "marking": "", "img": "g062_02.jpg"}]}, {"table": 63, "entries": [{"name": "Prochlorperazine\n 8mg/Tab", "common": "Novamin", "chinese": "蘋果酸丙氯陪拉辛錠", "marking": "一字刻痕", "img": "g063_01.jpg"}, {"name": "*Prochlorperazine(Novamin) Inj. 5mg/ml/Amp", "common": "Novamin", "chinese": "諾安命注射液", "marking": "", "img": "g063_02.jpg"}]}, {"table": 64, "entries": [{"name": "Augmentin(Soonmelt) 375mg/Tab", "common": "Augmentin", "chinese": "雙合黴素膜衣錠", "marking": "印字：YSP4", "img": "g064_01.jpg"}, {"name": "*Augmentin(Amoclav) Inj. 1/0.2g/Vial", "common": "Augmentin", "chinese": "艾莫斯克靜脈乾粉注射劑", "marking": "", "img": "g064_02.jpg"}]}, {"table": 65, "entries": [{"name": "Tranexamic Acid(Trand) 250mg/Cap", "common": "Transamin", "chinese": "血迅膠囊", "marking": "印字：STD 538", "img": "g065_01.jpg"}, {"name": "*Tranexamic Acid(Tren) Inj. 500mg/5ml/Amp", "common": "Transamin", "chinese": "特朗注射液", "marking": "", "img": "g065_02.jpg"}]}, {"table": 66, "entries": [{"name": "Valproate(Depakine) 200mg/Tab", "common": "Depakine", "chinese": "帝拔癲腸溶錠", "marking": "", "img": "g066_01.jpg"}, {"name": "Valproate(Hecalis) Oral Solution 8g/40ml/BT", "common": "Depakine", "chinese": "息癲適液", "marking": "", "img": "g066_02.jpg"}]}, {"table": 67, "entries": [{"name": "Vitamin B Complex (Dailycare Actibest)Tab", "common": "Vitamin B Complex", "chinese": "沛多活杏必糖衣錠", "marking": "", "img": "g067_01.jpg"}, {"name": "*Vit. B Complex Inj. 1ml/Amp", "common": "Vitamin B Complex", "chinese": "複合維生素－Ｂ注射液", "marking": "", "img": "g067_02.jpg"}]}, {"table": 68, "entries": [{"name": "*Cimetidine(Cimetin)Inj 100mg/ml 2ml/Amp", "common": "Tagamet", "chinese": "治潰平注射液", "marking": "", "img": "g068_01.jpg"}, {"name": "Cimetidine(Tamedin) 200mg/Tab", "common": "Tagamet", "chinese": "達胃新膜衣錠", "marking": "", "img": "g068_02.jpg"}]}, {"table": 69, "entries": [{"name": "*Diphenhydramine Inj. 30mg/1ml/Amp", "common": "Vena", "chinese": "鹽酸二苯胺明注射液\"", "marking": "", "img": "g069_01.jpg"}, {"name": "Diphenhydramine(Benamine) 50mg/Cap", "common": "Vena", "chinese": "去敏膠囊", "marking": "印字：327", "img": "g069_02.jpg"}]}, {"table": 70, "entries": [{"name": "*Dipyridamole(Posintin) Inj. 10mg/2ml/Amp", "common": "Persantin", "chinese": "保心丁注射液", "marking": "", "img": "g070_01.jpg"}, {"name": "Dipyridamole 25mg/Tab", "common": "Persantin", "chinese": "待匹力達糖衣錠", "marking": "印字：YSP 183", "img": "g070_02.jpg"}]}, {"table": 71, "entries": [{"name": "*Metoclopramide(Promeran) Inj. 10mg/2ml/Amp", "common": "Primperan", "chinese": "普克胃注射液", "marking": "", "img": "g071_01.jpg"}, {"name": "Metoclopramide(Promeran) 3.84mg/Tab", "common": "Primperan", "chinese": "胃明朗糖衣錠", "marking": "印字：S", "img": "g071_02.jpg"}]}, {"table": 72, "entries": [{"name": "○SYMbicort Rapihaler 120Doses/BT", "common": "Symbicort", "chinese": "吸必擴氣化噴霧劑", "marking": "", "img": "g072_01.jpg"}, {"name": "○Symbicort Turbuhaler 120Doses/BT", "common": "Symbicort", "chinese": "吸必擴都保定量粉狀吸入劑", "marking": "", "img": "g072_02.jpg"}]}, {"table": 73, "entries": [{"name": "Cilostazol(Loata) 50mg/Tab", "common": "Pletaal", "chinese": "羅達錠", "marking": "印字: CCP C90", "img": "g073_01.jpg"}, {"name": "Dicyclomine(Swityl) 10mg/Tab", "common": "Bentyl", "chinese": "胃疾寧錠", "marking": "", "img": "g073_02.jpg"}]}, {"table": 74, "entries": [{"name": "Isoniazid 100mg/Tab", "common": "INAH", "chinese": "異菸鹼醯井錠", "marking": "", "img": "g074_01.jpg"}, {"name": "Lorazepam(Anxiedin) 1mg/Tab", "common": "Ativan", "chinese": "安靜錠", "marking": "印字: 33 / 一字刻痕", "img": "g074_02.jpg"}, {"name": "Nitroglycerin(Nitrostat)(NTG) 0.6mg/Tab", "common": "Nitrostat", "chinese": "耐絞寧錠", "marking": "印字：N∕6", "img": "g074_03.jpg"}]}, {"table": 75, "entries": [{"name": "Pioglitazone(Piotas) 15mg/Tab", "common": "Actos", "chinese": "安醣錠", "marking": "印字：印字：PL ∕T41", "img": "g075_01.jpg"}, {"name": "PIOGLITAZONE(Politone) 30mg/Tab", "common": "Actos", "chinese": "順醣錠", "marking": "印字：ST 397∕30雙面一字刻痕", "img": "g075_02.jpg"}, {"name": "Procaterol(Pocathma-Mini) 25ug/Tab", "common": "Meptin", "chinese": "氣樂順微錠", "marking": "印字：S T∕273∕一字刻痕", "img": "g075_03.jpg"}]}, {"table": 76, "entries": [{"name": "Pyridoxine(Vit. B6)  50mg/Tab", "common": "Vitamin B6", "chinese": "鹽酸比多辛錠", "marking": "印字:JCP∕011", "img": "g076_01.jpg"}, {"name": "Tolterodine(Detrusitol) 2mg/Tab", "common": "Detrusitol", "chinese": "得舒妥膜衣錠", "marking": "印字：DT", "img": "g076_02.jpg"}]}, {"table": 77, "entries": [{"name": "Acarbose(Carlipin) 50mg/Tab", "common": "Glucobay", "chinese": "糖利平錠", "marking": "印字:YSP 6", "img": "g077_01.jpg"}, {"name": "Butylscopolamine(Buscopan) 10mg/Tab", "common": "Buscopan", "chinese": "補斯可胖糖衣錠", "marking": "", "img": "g077_02.jpg"}]}, {"table": 78, "entries": [{"name": "DONEPEZIL(Nomi-Nox) 5mg/Tab", "common": "Aricept", "chinese": "腦密腦舒膜衣錠", "marking": "印字：NOMINOX∕5", "img": "g078_01.jpg"}, {"name": "Fludiazepam(Era) 0.25mg/Tab", "common": "Erispan", "chinese": "易舒錠", "marking": "印字:751", "img": "g078_02.jpg"}]}, {"table": 79, "entries": [{"name": "Metoclopramide(Promeran) 3.84mg/Tab", "common": "Primperan", "chinese": "胃明朗糖衣錠", "marking": "印字：S", "img": "g079_01.jpg"}, {"name": "Prochlorperazine 8mg/Tab", "common": "Novamin", "chinese": "蘋果酸丙氯陪拉辛錠", "marking": "一字刻痕", "img": "g079_02.jpg"}]}, {"table": 80, "entries": [{"name": "Baclofen(Befon) 5mg/Tab", "common": "Baclon", "chinese": "倍鬆錠", "marking": "印字:B∕LO", "img": "g080_01.jpg"}, {"name": "Thyroxine(Eltroxin) 50mcg/Tab", "common": "Eltroxin", "chinese": "昂特欣錠", "marking": "印字：GS 11E∕50", "img": "g080_02.jpg"}]}, {"table": 81, "entries": [{"name": "Amantadine(Enzil) 100mg/Tab", "common": "Pk-Merz", "chinese": "英智錠", "marking": "一字刻痕", "img": "g081_01.jpg"}, {"name": "Ambroxol(Musco) 30mg/Tab", "common": "Mucosolvan", "chinese": "美舒咳錠", "marking": "印字:S∣STD 189 ∕一字刻痕", "img": "g081_02.jpg"}, {"name": "Benzbromarone(Euricon) 50mg/Tab", "common": "Urinorm", "chinese": "優力康錠", "marking": "印字: SY 50∕一字刻痕", "img": "g081_03.jpg"}]}, {"table": 82, "entries": [{"name": "Dihydroergotoxine(Elistin) 1.5mg/Tab", "common": "Elmesatt", "chinese": "益利循錠", "marking": "", "img": "g082_01.jpg"}, {"name": "Domperidone(Emetrol) 10mg/Tab", "common": "Motilium", "chinese": "癒吐寧錠", "marking": "印字：031", "img": "g082_02.jpg"}, {"name": "Furosemide(Furide) 40mg/Tab", "common": "Lasix", "chinese": "舒利諾錠", "marking": "印字：STD 282∕一字刻痕", "img": "g082_03.jpg"}]}, {"table": 83, "entries": [{"name": "Gliclazide(Gluzide) 80mg/Tab", "common": "Diamicron", "chinese": "格汝唐錠", "marking": "印字：STD G05∕一字刻痕", "img": "g083_01.jpg"}, {"name": "Midodrine(Midorine) 2.5mg/Tab", "common": "Midorine", "chinese": "邁妥林錠", "marking": "印字：PL T03", "img": "g083_02.jpg"}, {"name": "Nicoradil(Silvinol) 5mg/Tab", "common": "Sigmart", "chinese": "喜必諾錠", "marking": "印字：NS /298", "img": "g083_03.jpg"}]}, {"table": 84, "entries": [{"name": "Pramipexole(Mirapex) 1mg/Tab", "common": "Mirapex", "chinese": "樂伯克錠", "marking": "印字：P9∕雙面一字刻痕", "img": "g084_01.jpg"}, {"name": "Tizanidine(Stidine) 2mg/Tab", "common": "Sirdalud", "chinese": "舒體錠", "marking": "印字：SK∕一字刻痕", "img": "g084_02.jpg"}, {"name": "Trihexyphenidyl(Switane) 2mg/Tab", "common": "Artane", "chinese": "瑞丹錠", "marking": "印字：SWISS∕2∕一字刻痕", "img": "g084_03.jpg"}]}, {"table": 85, "entries": [{"name": "Aceclofenac(Ascofen) 100mg/Tab", "common": "Tonec", "chinese": "炎立消膜衣錠", "marking": "印字:STD∕777", "img": "g085_01.jpg"}, {"name": "ALENDRONATE 70mg/Tab", "common": "Fosamax", "chinese": "善骨實膜衣錠", "marking": "", "img": "g085_02.jpg"}]}, {"table": 86, "entries": [{"name": "Diltiazem(Cartil) 60mg/Tab", "common": "Herbesser", "chinese": "卡迪爾錠", "marking": "印字：SYG 60∕一字刻痕", "img": "g086_01.jpg"}, {"name": "Dimethicone(Kascoal) 40mg/Tab", "common": "Gascone", "chinese": "加斯克兒錠", "marking": "", "img": "g086_02.jpg"}, {"name": "Doxazosin(Xadosin) SR 4mg/Tab", "common": "Doxaben", "chinese": "薩多心持續性藥效錠", "marking": "", "img": "g086_03.jpg"}]}, {"table": 87, "entries": [{"name": "Magnesium Oxide 250mg/Tab", "common": "Magnesium Oxide", "chinese": "氧化鎂錠", "marking": "印字：SK MGO∕一字刻痕", "img": "g087_01.jpg"}, {"name": "Pitavastatin(Zulitor) 4mg/Tab", "common": "Livalo", "chinese": "平脂膜衣錠", "marking": "印字:OP∕59", "img": "g087_02.jpg"}, {"name": "Valproate(Depakine) 200mg/Tab", "common": "Depakine", "chinese": "帝拔癲腸溶錠", "marking": "", "img": "g087_03.jpg"}]}, {"table": 88, "entries": [{"name": "CARVEDILOL 25mg/Tab", "common": "Dilatrend", "chinese": "壓落保錠", "marking": "印字:CCP C69∕雙面一字刻痕", "img": "g088_01.jpg"}, {"name": "Olmesartan(Olmesardin) 20mg/Tab", "common": "Ometec", "chinese": "妥得降膜衣錠", "marking": "印字：YSP 245", "img": "g088_02.jpg"}]}, {"table": 89, "entries": [{"name": "ACETAZOLAMIDE(Acetazolamax) 250mg/Tab", "common": "Diamox", "chinese": "安賜他明錠", "marking": "印字:P.S.∕一字刻痕", "img": "g089_01.jpg"}, {"name": "Amiodarone(Adarone) 200mg/Tab", "common": "Cordarone", "chinese": "艾達絡錠", "marking": "印字:ADARONE SY 200", "img": "g089_02.jpg"}, {"name": "Bacide(Baktar) 80/400mg/Tab", "common": "Baktar", "chinese": "菌特制錠", "marking": "印字:705∕S∕六角環", "img": "g089_03.jpg"}]}, {"table": 90, "entries": [{"name": "Calcium Lactate 500mg/Tab", "common": "Calcium", "chinese": "乳酸鈣錠", "marking": "一字刻痕", "img": "g090_01.jpg"}, {"name": "Ciprofloxacin(Suxen) 250mg/F.C. Tab", "common": "Ciproxin", "chinese": "司淨膜衣錠", "marking": "印字:YSP 52∕一字刻痕", "img": "g090_02.jpg"}, {"name": "Clarinase (Minlife-P) 5/60mg/Tab", "common": "Clarinase", "chinese": "特敏福持續性藥效錠", "marking": "印字：YSP 68", "img": "g090_03.jpg"}]}, {"table": 91, "entries": [{"name": "Bambuterol(Lungtec) 10mg/Tab", "common": "Bambec", "chinese": "肺喘克錠", "marking": "印字:SY∣Bm∕一字刻痕", "img": "g091_01.jpg"}, {"name": "Glibenclamide(Gliben) 5mg/Tab", "common": "Euglucon", "chinese": "固利康錠", "marking": "印字：STD∣140", "img": "g091_02.jpg"}, {"name": "GLICLAZIDE(Diamin) MR 30mg/Tab", "common": "Diamicron", "chinese": "印字：ST∕427", "marking": "代蜜持續性藥效錠", "img": "g091_03.jpg"}]}, {"table": 92, "entries": [{"name": "Mosapride(Mosapin) 5mg/Tab", "common": "Mopride", "chinese": "順胃暢膜衣錠", "marking": "印字：S∣D∕168", "img": "g092_01.jpg"}, {"name": "Perindopril(Peripil) 4mg/Tab", "common": "Acertil", "chinese": "倍立平錠", "marking": "印字：PER / SY", "img": "g092_02.jpg"}]}, {"table": 93, "entries": [{"name": "Exforge HCT 5/160/12.5mg/Tab", "common": "Exforge HCT", "chinese": "力安穩膜衣錠", "marking": "印字：NVR∕VCL", "img": "g093_01.jpg"}, {"name": "Fosamax Plus 70mg/5600IU/Tab", "common": "Fosamax", "chinese": "福善美保骨錠", "marking": "印字：270∕骨型刻痕", "img": "g093_02.jpg"}]}, {"table": 94, "entries": [{"name": "Atorvastatin(Atorin) 10mg/Tab", "common": "Lipitor", "chinese": "降脂妥膜衣錠", "marking": "印字: GBL∕086", "img": "g094_01.jpg"}, {"name": "Caduet 5/10mg/Tab", "common": "Caduet", "chinese": "脂脈優", "marking": "印字:Pfizer∕CDT 051", "img": "g094_02.jpg"}, {"name": "Desmopressin(Minirin) 0.1mg/Tab", "common": "Minirin", "chinese": "迷你寧", "marking": "印字：0.1∕一字刻痕", "img": "g094_03.jpg"}]}, {"table": 95, "entries": [{"name": "Losartan(Losacar) 50mg/Tab", "common": "Cozaar", "chinese": "緩壓膜衣錠", "marking": "", "img": "g095_01.jpg"}, {"name": "Midazolam(Dormicum) 7.5mg/Tab", "common": "Dormicum", "chinese": "導眠靜膜衣錠", "marking": "印字:ROCHE 7.5∕一字刻痕", "img": "g095_02.jpg"}]}, {"table": 96, "entries": [{"name": "Actosmet(Lodiglit) 15/850mg/Tab", "common": "Actosmet", "chinese": "雙革醣膜衣錠", "marking": "印字:SCP∕976", "img": "g096_01.jpg"}, {"name": "Atorvastatin(ATORVA) 20mg/Tab", "common": "Lipitor", "chinese": "立舒脂膜衣錠", "marking": "印字: S∣ D∕771", "img": "g096_02.jpg"}, {"name": "Augmentin(Soonmelt) 375mg/Tab", "common": "Augmentin", "chinese": "雙合黴素膜衣錠", "marking": "印字：YSP4", "img": "g096_03.jpg"}]}, {"table": 97, "entries": [{"name": "Azithromycin(Zithromax) 250mg/Tab", "common": "Zithromax", "chinese": "日舒錠", "marking": "Pfizer∕ZTM 250", "img": "g097_01.jpg"}, {"name": "Hyzaar 100/12.5mg/Tab", "common": "Hyzaar", "chinese": "好悅您膜衣錠", "marking": "印字：745", "img": "g097_02.jpg"}, {"name": "Fenofibrate(Lifenoz-U) 160mg/Tab", "common": "Lipanthyl", "chinese": "利諾脂優錠", "marking": "印字:S160", "img": "g097_03.jpg"}]}, {"table": 98, "entries": [{"name": "Glimet 2/500mg/Tab", "common": "Amaryl M", "chinese": "利控糖膜衣錠", "marking": "印字：ST 502∕一字刻痕", "img": "g098_01.jpg"}, {"name": "Theophylline(Telin) 200mg/Tab", "common": "Xanthium", "chinese": "鐵寧喘持續性錠", "marking": "STD∕TT13", "img": "g098_02.jpg"}]}, {"table": 99, "entries": [{"name": "Oxybutynin(Oxyban) 5mg/Tab", "common": "Ditropan", "chinese": "我喜滿錠", "marking": "印字：WD∕十字刻痕", "img": "g099_01.jpg"}, {"name": "Trospium(Uracare) 10mg/Tab", "common": "Spasmax", "chinese": "悠尿可錠", "marking": "印字：TP10", "img": "g099_02.jpg"}]}, {"table": 100, "entries": [{"name": "Alinamine-F (Aelocon) 50/5mg/Tab", "common": "Alinamin-F", "chinese": "愛樂康糖衣錠", "marking": "", "img": "g100_01.jpg"}, {"name": "Allopurinol(Allopurinol) 100mg/Tab", "common": "Zyloric", "chinese": "安樂普利諾錠", "marking": "印字:YUNG SHIN", "img": "g100_02.jpg"}, {"name": "Biotase(Dialicon[Lipase ]) Tab", "common": "Biotase", "chinese": "加利康錠", "marking": "印字:SHOU CHAN∕一字刻痕", "img": "g100_03.jpg"}]}, {"table": 101, "entries": [{"name": "Bisacodyl 5mg/Tab", "common": "Dulcolax", "chinese": "秘克的腸溶糖衣錠", "marking": "", "img": "g101_01.jpg"}, {"name": "Cafergot (Ergoton) 1/100mg/Tab", "common": "Cafergot", "chinese": "易克痛膜衣錠", "marking": "印字：m", "img": "g101_02.jpg"}, {"name": "Carvedilol(Cardiol) 6.25mg/Tab", "common": "Dilatrend", "chinese": "心通寧錠", "marking": "印字: SYP 62∕一字刻痕", "img": "g101_03.jpg"}]}, {"table": 102, "entries": [{"name": "Donepezil(Epalon) 10mg/Tab", "common": "Aricept", "chinese": "憶可朗膜衣錠", "marking": "印字：NK∕482", "img": "g102_01.jpg"}, {"name": "Famotidine(Fadin) 20mg/Tab", "common": "Gaster", "chinese": "胃樂順膜衣錠", "marking": "印字：STD∕223", "img": "g102_02.jpg"}, {"name": "Glycopyrrolate(Glycopyrodyn) 1mg/Tab", "common": "Robinul", "chinese": "格比平錠", "marking": "印字：EX 1∕一字刻痕", "img": "g102_03.jpg"}]}, {"table": 103, "entries": [{"name": "Repaglinide 1mg/Tab", "common": "NovoNorm", "chinese": "柔醣錠", "marking": "印字：CCP/C74", "img": "g103_01.jpg"}, {"name": "Rosuvastatin(Crestor) 5mg/Tab", "common": "Crestor", "chinese": "冠脂妥膜衣錠", "marking": "印字：ZD4522∕5", "img": "g103_02.jpg"}, {"name": "Vitamin B Complex (Dailycare Actibest) Tab", "common": "Vitamin B Complex", "chinese": "沛多活杏必糖衣錠", "marking": "", "img": "g103_03.jpg"}]}, {"table": 104, "entries": [{"name": "Cataflam(Diclofenac Pot.) 25mg/Tab", "common": "Cataflam", "chinese": "克他服寧糖衣錠", "marking": "", "img": "g104_01.jpg"}, {"name": "Imipramine(Fronil) 25mg/Tab", "common": "Tofranil", "chinese": "福樂你糖衣錠", "marking": "", "img": "g104_02.jpg"}]}, {"table": 105, "entries": [{"name": "Nifedipine(Adalat) OROS 30mg/Tab", "common": "Adalat", "chinese": "冠達悅歐樂持續性藥效錠", "marking": "印字：Adalat 30", "img": "g105_01.jpg"}, {"name": "Pinaverium(Spastec) 50mg/Tab", "common": "Dicetel", "chinese": "舒攣平膜衣錠", "marking": "印字：SPC∕S94", "img": "g105_02.jpg"}, {"name": "Rifater 120/80/250/Tab", "common": "Rifater", "chinese": "衛肺特糖衣錠", "marking": "", "img": "g105_03.jpg"}]}, {"table": 106, "entries": [{"name": "Saxagliptin(Onglyza) 5mg/Tab", "common": "Onglyza", "chinese": "昂格莎膜衣錠", "marking": "印字：4215/5", "img": "g106_01.jpg"}, {"name": "Spironolactone(Aldactin) 25mg/Tab", "common": "Aldactone", "chinese": "愛達信錠", "marking": "印字：SC SO2∕一字刻痕", "img": "g106_02.jpg"}, {"name": "Terazosin(Teradrin) 2mg/Tab", "common": "Hytril", "chinese": "暢流錠", "marking": "印字：S∣Y∕TERADRIN", "img": "g106_03.jpg"}]}, {"table": 107, "entries": [{"name": "Trazodone(Torlex) 50mg/Tab", "common": "Mesyrel", "chinese": "妥解鬱錠", "marking": "印字：YSP 46∕一字刻痕", "img": "g107_01.jpg"}, {"name": "Rivaroxaban(Xarelto) 15mg/Tab", "common": "Xarelto", "chinese": "拜瑞妥膜衣錠", "marking": "印字：BAYER∕15 ▽", "img": "g107_02.jpg"}]}, {"table": 108, "entries": [{"name": "Chlorzoxazone(Solacon) 200mg/Tab", "common": "Solaxin", "chinese": "舒可樂錠", "marking": "印字:STD∕S 05", "img": "g108_01.jpg"}, {"name": "EXFORGE 5/80mg/Tab", "common": "Exforge", "chinese": "易安穩膜衣錠", "marking": "印字：NVR∕NV", "img": "g108_02.jpg"}, {"name": "Folic Acid 5mg/Tab", "common": "Folic Acid", "chinese": "葉酸錠", "marking": "印字：GCPO 0602∕一字刻痕", "img": "g108_03.jpg"}]}, {"table": 109, "entries": [{"name": "Dipyridamole 25mg/Tab", "common": "Persantin", "chinese": "待匹力達糖衣錠", "marking": "印字：YSP 183", "img": "g109_01.jpg"}, {"name": "Esidri(Relazide) 0.1/10/10mg/Tab", "common": "Esidri", "chinese": "利吉得糖衣錠", "marking": "", "img": "g109_02.jpg"}, {"name": "Estrogen Conjugate(Estromon) 0.625mg/Tab", "common": "Premarin", "chinese": "伊使蒙膜衣錠", "marking": "印字：S", "img": "g109_03.jpg"}]}, {"table": 110, "entries": [{"name": "Acetaminophen(Acetal) 500mg/Tab", "common": "Panadol", "chinese": "愛舒疼錠", "marking": "印字: 07︱07∕PURZER", "img": "g110_01.jpg"}, {"name": "Febuxostat(Febuton) 80mg/Tab", "common": "Feburic", "chinese": "達理痛膜衣錠", "marking": "印字:S∣D∕980", "img": "g110_02.jpg"}]}, {"table": 111, "entries": [{"name": "Galvus Met(Vidagliptin & Metformin) 50/850mg/Tab", "common": "Galvus Met", "chinese": "高糖優美膜衣錠", "marking": "印字：NVR∕FLO", "img": "g111_01.jpg"}, {"name": "Janumet 50/850mg/Tab", "common": "Janumet", "chinese": "捷糖穩膜衣錠", "marking": "印字：575", "img": "g111_02.jpg"}]}, {"table": 112, "entries": [{"name": "Levetiracetam(Letampin) 500mg/Tab", "common": "Keppra", "chinese": "力癲平膜衣錠", "marking": "印字：SW 500", "img": "g112_01.jpg"}, {"name": "Levofloxacin(Leflodal) 500mg/Tab", "common": "Cravit", "chinese": "佐淨菌膜衣錠", "marking": "印字：AX  067∕雙面一字刻痕", "img": "g112_02.jpg"}]}, {"table": 113, "entries": [{"name": "Amlodipine(Norvasc) 5mg/Tab", "common": "Norvasc", "chinese": "脈優錠", "marking": "印字:Pfizer∕NVC 5", "img": "g113_01.jpg"}, {"name": "AMLODIPINE(Amlobin) 5mg/Tab生達", "common": "Norvasc", "chinese": "鎮脈錠", "marking": "印字:STD∕TA 21", "img": "g113_02.jpg"}]}, {"table": 114, "entries": [{"name": "Diphenhydramine(Benamine) 50mg/Cap", "common": "Vena", "chinese": "去敏膠囊", "marking": "印字：327", "img": "g114_01.jpg"}, {"name": "Pregabalin(Lyrica) 75mg/Tab", "common": "Lyrica", "chinese": "利瑞卡膠囊", "marking": "印字：Pfizer∕PGN 75", "img": "g114_02.jpg"}]}];
+
+// ---- 藥名高亮：大小寫警示字母／劑量／劑型／廠牌 ----
+function highlightDrug(str){
+  const flagMatch = str.match(/^([!*◇§☆○]+)\s*/);
+  let flags = "", rest = str;
+  if(flagMatch){ flags = flagMatch[1]; rest = str.slice(flagMatch[0].length); }
+
+  const re = /(\([^)]+\))|(\d+(?:\.\d+)?(?:\/\d+(?:\.\d+)?)*\s*(?:mg|g|ml|mcg|ug|IU|iu|%|meq|Doses)?)|\b(Soft Cap|Effervescent Tab|Tab|Cap|Inj\.?|Amp|Vial|BT|Supp|Syr\.?|Cream|Oint\.?|Gel|Soln|Pkg)\b|([A-Z]{2,})/g;
+  const body = rest.replace(re, (m, brand, dose, form, tall) => {
+    if(brand) return `<span class="brand">${brand}</span>`;
+    if(dose)  return `<span class="dose">${dose}</span>`;
+    if(form)  return `<span class="form">${form}</span>`;
+    if(tall)  return `<span class="tallman">${tall}</span>`;
+    return m;
+  });
+  return (flags ? `<span class="flag">${flags}</span>` : "") + body;
+}
+
+function renderGroup(groupStr, idx){
+  const drugs = groupStr.split("&").map(s=>s.trim());
+  const div = document.createElement('div');
+  div.className = 'group';
+  const rows = drugs.map((d,i)=>{
+    const color = rowColors[i % rowColors.length];
+    return `<div class="drug-row">
+      <span class="letter" style="background:${color}">${String.fromCharCode(65+i)}</span>
+      <span class="drug-text">${highlightDrug(d)}</span>
+    </div>`;
+  }).join("");
+  div.innerHTML = `<div style="display:flex;align-items:flex-start;"><span class="group-idx">${idx+1}</span><div style="flex:1;">${rows}</div></div>`;
+  return div;
+}
+
+const root = document.getElementById('listRoot');
+const toc = document.getElementById('toc');
+
+nameGroups.forEach((catData,ci)=>{
+  const anchor = 'cat'+ci;
+  const a = document.createElement('a');
+  a.href = '#'+anchor;
+  a.textContent = catData.cat;
+  toc.appendChild(a);
+
+  const section = document.createElement('section');
+  section.className = 'category';
+  section.id = anchor;
+  section.innerHTML = `<div class="cat-head"><h2>${catData.cat}</h2><span class="count">${catData.groups.length} 組</span></div>`;
+  catData.groups.forEach((g,i)=> section.appendChild(renderGroup(g,i)));
+  root.appendChild(section);
+});
+
+// 外觀相似對照表
+(function(){
+  const anchor = 'catShape';
+  const a = document.createElement('a');
+  a.href = '#'+anchor;
+  a.textContent = '藥品外觀相似對照表';
+  toc.appendChild(a);
+
+  const section = document.createElement('section');
+  section.className = 'category';
+  section.id = anchor;
+  section.innerHTML = `<div class="cat-head"><h2>藥品外觀相似對照表</h2><span class="count">${shapeCategories.length} 類</span></div>`;
+  const grid = document.createElement('div');
+  grid.className = 'shape-grid';
+
+  const sizePx = { sm:26, md:34, lg:42 };
+
+  shapeCategories.forEach((sc,i)=>{
+    const card = document.createElement('div');
+    card.className = 'shape-card';
+    const h = sizePx[sc.size];
+    let w = h, radius = '50%', background, boxShadow = '';
+    if(sc.shape === 'oval'){ w = h*1.7; radius = '50%'; }
+    if(sc.shape === 'capsule'){ w = h*2.3; radius = '999px'; }
+    if(sc.shape === 'octagon'){ radius = '0'; }
+
+    if(sc.colors.length === 2){
+      background = `linear-gradient(90deg, ${sc.colors[0]} 50%, ${sc.colors[1]} 50%)`;
+    } else {
+      background = sc.colors[0];
+    }
+    if(sc.flat === false){
+      boxShadow = 'inset 0 -4px 6px rgba(0,0,0,.12), inset 0 3px 4px rgba(255,255,255,.6)';
+    } else if(sc.flat === true){
+      boxShadow = 'inset 0 0 0 1px rgba(0,0,0,.06)';
+    } else {
+      boxShadow = 'inset 0 -2px 4px rgba(0,0,0,.08)';
+    }
+    const border = sc.colors[0] === '#ffffff' ? '1px solid #cbd5e0' : 'none';
+
+    let clipPath = '';
+    if(sc.shape === 'octagon'){
+      clipPath = 'clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);';
+    }
+
+    const icon = document.createElement('div');
+    icon.className = 'pill-icon';
+    icon.setAttribute('style', `width:${w}px;height:${h}px;border-radius:${radius};background:${background};box-shadow:${boxShadow};border:${border};${clipPath}`);
+
+    const head = document.createElement('div');
+    head.className = 'shape-card-head';
+    head.innerHTML = `<div class="cat-num">${i+1}</div>`;
+    head.insertBefore(icon, head.firstChild);
+    const label = document.createElement('div');
+    label.className = 'cat-label';
+    label.textContent = sc.title;
+    head.appendChild(label);
+
+    card.appendChild(head);
+    const drugs = sc.drugs.split("&").map(s=>s.trim());
+    drugs.forEach((d,di)=>{
+      const color = rowColors[di % rowColors.length];
+      const row = document.createElement('div');
+      row.className = 'drug-row';
+      row.innerHTML = `<span class="letter" style="background:${color}">${String.fromCharCode(65+di)}</span><span class="drug-text">${highlightDrug(d)}</span>`;
+      card.appendChild(row);
+    });
+    grid.appendChild(card);
+  });
+
+  section.appendChild(grid);
+  root.appendChild(section);
+})();
+
+// 藥品相似對照表（含實際照片）
+(function(){
+  const anchor = 'catPhoto';
+  const a = document.createElement('a');
+  a.href = '#'+anchor;
+  a.textContent = '藥品相似對照表（照片）';
+  toc.appendChild(a);
+
+  const section = document.createElement('section');
+  section.className = 'category';
+  section.id = anchor;
+  section.innerHTML = `<div class="cat-head"><h2>藥品相似對照表（照片）</h2><span class="count">${compareGroups.length} 組</span></div>`;
+
+  const PART2_START = 73; // 從此組開始為「外觀相似」照片對照
+  compareGroups.forEach((g, gi)=>{
+    if(gi === 0){
+      const h = document.createElement('div');
+      h.className = 'subhead';
+      h.textContent = 'Part 1．藥名／劑量相似對照';
+      section.appendChild(h);
+    }
+    if(gi === PART2_START){
+      const h = document.createElement('div');
+      h.className = 'subhead';
+      h.textContent = 'Part 2．外觀相似對照（實際照片）';
+      section.appendChild(h);
+    }
+
+    const card = document.createElement('div');
+    card.className = 'compare-card';
+    card.innerHTML = `<span class="group-idx">${gi+1}</span>`;
+
+    const itemsWrap = document.createElement('div');
+    itemsWrap.className = 'compare-items';
+    g.entries.forEach((e, ei)=>{
+      const color = rowColors[ei % rowColors.length];
+      const item = document.createElement('div');
+      item.className = 'compare-item';
+      const imgTag = e.img ? `<img src="assets/${e.img}" alt="${e.name}" loading="lazy">` : `<div style="width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;color:#cbd5e0;background:#f7fafc;border-radius:8px;border:1px dashed var(--border);margin-bottom:8px;font-size:.75rem;">無照片</div>`;
+      item.innerHTML = `
+        <span class="letter" style="background:${color}">${String.fromCharCode(65+ei)}</span>
+        ${imgTag}
+        <div class="ph-name">${highlightDrug(e.name)}</div>
+        ${e.common ? `<div class="ph-common">${e.common}</div>` : ""}
+        ${e.chinese ? `<div class="ph-chinese">${e.chinese}</div>` : ""}
+        ${e.marking ? `<div class="ph-mark">${e.marking}</div>` : ""}
+      `;
+      itemsWrap.appendChild(item);
+    });
+    card.appendChild(itemsWrap);
+    section.appendChild(card);
+  });
+
+  root.appendChild(section);
+})();
+</script>
+</body>
+</html>
