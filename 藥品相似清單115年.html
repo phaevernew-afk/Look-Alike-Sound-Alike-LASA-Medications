@@ -264,6 +264,23 @@ function renderGroup(groupStr, idx){
   return div;
 }
 
+// 圖片容錯：因檔案數量太多分批上傳到 assets / assets2 / assets3，
+// 若某張圖在預設資料夾找不到，自動依序改抓其他資料夾
+const ASSET_FOLDERS = ['assets','assets2','assets3'];
+function tryNextAsset(img){
+  const idx = parseInt(img.dataset.idx || '0', 10) + 1;
+  if(idx < ASSET_FOLDERS.length){
+    img.dataset.idx = idx;
+    img.src = ASSET_FOLDERS[idx] + '/' + img.dataset.file;
+  } else {
+    img.onerror = null;
+    const ph = document.createElement('div');
+    ph.style.cssText = 'width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;color:#cbd5e0;background:#f7fafc;border-radius:8px;border:1px dashed #e2e8f0;margin-bottom:8px;font-size:.75rem;';
+    ph.textContent = '照片讀取失敗';
+    img.replaceWith(ph);
+  }
+}
+
 const root = document.getElementById('listRoot');
 const toc = document.getElementById('toc');
 
@@ -394,7 +411,7 @@ nameGroups.forEach((catData,ci)=>{
       const color = rowColors[ei % rowColors.length];
       const item = document.createElement('div');
       item.className = 'compare-item';
-      const imgTag = e.img ? `<img src="assets/${e.img}" alt="${e.name}" loading="lazy">` : `<div style="width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;color:#cbd5e0;background:#f7fafc;border-radius:8px;border:1px dashed var(--border);margin-bottom:8px;font-size:.75rem;">無照片</div>`;
+      const imgTag = e.img ? `<img src="assets/${e.img}" data-file="${e.img}" data-idx="0" alt="${e.name}" loading="lazy" onerror="tryNextAsset(this)">` : `<div style="width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;color:#cbd5e0;background:#f7fafc;border-radius:8px;border:1px dashed var(--border);margin-bottom:8px;font-size:.75rem;">無照片</div>`;
       item.innerHTML = `
         <span class="letter" style="background:${color}">${String.fromCharCode(65+ei)}</span>
         ${imgTag}
